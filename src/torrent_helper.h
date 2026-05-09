@@ -34,6 +34,8 @@
 #else
 /* Fallback to local SHA1 implementation */
 #include "sha1_local.h"
+/* Define SHA_CTX as alias for SHA1_CTX for compatibility */
+typedef SHA1_CTX SHA_CTX;
 /* Map local SHA1 function names to OpenSSL names for compatibility */
 #define SHA1_Init(ctx)     SHA1Init(ctx)
 #define SHA1_Update(ctx, data, len) SHA1Update(ctx, data, len)

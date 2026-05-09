@@ -22,7 +22,7 @@ A million repetitions of "a"
 /* for uint32_t */
 #include <stdint.h>
 
-#include "sha1.h"
+#include "sha1_local.h"
 
 
 #define rol(value, bits) (((value) << (bits)) | ((value) >> (32 - (bits))))
