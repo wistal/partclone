@@ -28,8 +28,16 @@
 #endif
 #if defined(HAVE_EVP_MD_CTX_methods)
 #include <openssl/evp.h>
-#else
+#elif defined(HAVE_LIBCRYPTO) || defined(HAVE_OPENSSL)
+/* Use OpenSSL SHA1 if available */
 #include <openssl/sha.h>
+#else
+/* Fallback to local SHA1 implementation */
+#include "sha1_local.h"
+/* Map local SHA1 function names to OpenSSL names for compatibility */
+#define SHA1_Init(ctx)     SHA1Init(ctx)
+#define SHA1_Update(ctx, data, len) SHA1Update(ctx, data, len)
+#define SHA1_Final(hash, ctx) SHA1Final(hash, ctx)
 #endif
 
 #define DEFAULT_PIECE_SIZE (16ULL * 1024 * 1024)

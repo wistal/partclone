@@ -6,6 +6,15 @@ PCL_XXHASH_LIBS =
 PCL_XXHASH_CFLAGS =
 endif
 
+# Local SHA1 implementation (used when OpenSSL is not available)
+if HAVE_OPENSSL
+SHA1_LOCAL_SRC =
+SHA1_LOCAL_OBJ =
+else
+SHA1_LOCAL_SRC = sha1_local.c sha1_local.h
+SHA1_LOCAL_OBJ = sha1_local.o
+endif
+
 AUTOMAKE_OPTIONS = subdir-objects
 AM_CPPFLAGS = -DLOCALEDIR=\"$(localedir)\" -D_FILE_OFFSET_BITS=64 $(PCL_XXHASH_CFLAGS) $(ISAL_CFLAGS)
 LDADD = $(LIBINTL) $(PCL_XXHASH_LIBS)
@@ -27,6 +36,13 @@ EXFATFS_SOURCE=exfat/cluster.c exfat/utf.c exfat/utils.c exfat/lookup.c exfat/io
 F2FS_SOURCE=f2fs/fsck.c f2fs/fsck.h f2fs/f2fs.h f2fs/mount.c f2fs/mkquota.c f2fs/quotaio.c f2fs/dump.c f2fs/dir.c f2fs/quotaio_v2.c f2fs/node.c f2fs/segment.c f2fs/xattr.c  f2fs/dict.c f2fs/quotaio_tree.c f2fs/libf2fs.c f2fs/libf2fs_io.c f2fs/libf2fs_zoned.c f2fs/nls_utf8.c
 
 CRYPTO_DEPS = $(OPENSSL_LIBS) $(ZLIB_LIBS) $(ZSTD_LIBS)
+
+# Add local SHA1 object if OpenSSL is not available
+if HAVE_OPENSSL
+SHA1_DEPS =
+else
+SHA1_DEPS = sha1_local.o
+endif
 
 if ENABLE_STATIC
 AM_LDFLAGS=-all-static
@@ -51,56 +67,56 @@ version.h: FORCE
 
 main_files=main.c partclone.c progress.c checksum.c partclone.h progress.h gettext.h checksum.h bitmap.h
 partclone_info_SOURCES=info.c partclone.c checksum.c partclone.h fs_common.h checksum.h
-partclone_info_LDADD=torrent_helper.o $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_info_LDADD=torrent_helper.o $(SHA1_DEPS) $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
 partclone_restore_SOURCES=$(main_files) ddclone.c ddclone.h
 partclone_restore_CFLAGS=-DRESTORE -DDD
-partclone_restore_LDADD=torrent_helper.o $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_restore_LDADD=torrent_helper.o $(SHA1_DEPS) $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
 
 partclone_chkimg_SOURCES=$(main_files) ddclone.c ddclone.h
 partclone_chkimg_CFLAGS=-DCHKIMG -DDD
-partclone_chkimg_LDADD=torrent_helper.o $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_chkimg_LDADD=torrent_helper.o $(SHA1_DEPS) $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
 
 partclone_dd_SOURCES=$(main_files) ddclone.c ddclone.h
 partclone_dd_CFLAGS=-DDD
-partclone_dd_LDADD=torrent_helper.o $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_dd_LDADD=torrent_helper.o $(SHA1_DEPS) $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
 
 partclone_imager_SOURCES=$(main_files) ddclone.c ddclone.h
 partclone_imager_CFLAGS=-DIMG
-partclone_imager_LDADD=torrent_helper.o $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_imager_LDADD=torrent_helper.o $(SHA1_DEPS) $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
 
 if ENABLE_EXTFS
 sbin_PROGRAMS += partclone.extfs
 partclone_extfs_SOURCES=$(main_files) extfsclone.c extfsclone.h
 partclone_extfs_CFLAGS=-DEXTFS
-partclone_extfs_LDADD=torrent_helper.o -lext2fs -lcom_err $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static} -lpthread
+partclone_extfs_LDADD=torrent_helper.o $(SHA1_DEPS) -lext2fs -lcom_err $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static} -lpthread
 endif
 
 if ENABLE_REISERFS
 sbin_PROGRAMS += partclone.reiserfs
 partclone_reiserfs_SOURCES=$(main_files) reiserfsclone.c reiserfsclone.h
 partclone_reiserfs_CFLAGS=-DREISERFS
-partclone_reiserfs_LDADD=torrent_helper.o -lreiserfs -ldal $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_reiserfs_LDADD=torrent_helper.o $(SHA1_DEPS) -lreiserfs -ldal $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
 endif
 
 if ENABLE_REISER4
 sbin_PROGRAMS += partclone.reiser4
 partclone_reiser4_SOURCES=$(main_files) reiser4clone.c reiser4clone.h
 partclone_reiser4_CFLAGS=-DREISER4
-partclone_reiser4_LDADD=torrent_helper.o -lreiser4 -laal $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_reiser4_LDADD=torrent_helper.o $(SHA1_DEPS) -lreiser4 -laal $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
 endif
 
 if ENABLE_HFSP
 sbin_PROGRAMS += partclone.hfsp
 partclone_hfsp_SOURCES=$(main_files) hfsplusclone.c hfsplusclone.h
 partclone_hfsp_CFLAGS=-DHFSPLUS
-partclone_hfsp_LDADD=torrent_helper.o $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_hfsp_LDADD=torrent_helper.o $(SHA1_DEPS) $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
 endif
 
 if ENABLE_APFS
 sbin_PROGRAMS += partclone.apfs
 partclone_apfs_SOURCES=$(main_files) apfsclone.c apfsclone.h
 partclone_apfs_CFLAGS=-DAPFS
-partclone_apfs_LDADD=torrent_helper.o $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_apfs_LDADD=torrent_helper.o $(SHA1_DEPS) $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
 endif
 
 
@@ -108,35 +124,35 @@ if ENABLE_XFS
 sbin_PROGRAMS += partclone.xfs
 partclone_xfs_SOURCES=$(main_files) xfsclone.c xfsclone.h $(XFS_SOURCE)
 partclone_xfs_CFLAGS=-I$(srcdir)/xfs/include -I$(srcdir)/xfs/libxfs/ -I$(srcdir)/xfs/include/xfs/ -I$(srcdir)/xfs/ -DXFS -D_GNU_SOURCE -DNDEBUG  $(UUID_CFLAGS) $(URCU_CFLAGS)
-partclone_xfs_LDADD=torrent_helper.o -lrt -luuid -lblkid $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static} -lpthread $(URCU_LIBS)
+partclone_xfs_LDADD=torrent_helper.o $(SHA1_DEPS) -lrt -luuid -lblkid $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static} -lpthread $(URCU_LIBS)
 endif
 
 if ENABLE_EXFAT
 sbin_PROGRAMS += partclone.exfat
 partclone_exfat_SOURCES=$(main_files) exfatclone.c exfatclone.h $(EXFATFS_SOURCE)
 partclone_exfat_CFLAGS=-DEXFAT -D_GNU_SOURCE -std=c99
-partclone_exfat_LDADD=torrent_helper.o $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_exfat_LDADD=torrent_helper.o $(SHA1_DEPS) $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
 endif
 
 if ENABLE_F2FS
 sbin_PROGRAMS += partclone.f2fs
 partclone_f2fs_SOURCES=$(main_files) f2fsclone.c f2fsclone.h $(F2FS_SOURCE)
 partclone_f2fs_CFLAGS=-DF2FS -DHAVE_MNTENT_H=1 -DHAVE_SYS_MOUNT_H=1 -DHAVE_SYS_SYSMACROS_H=1 -DHAVE_SYS_UTSNAME_H=1 -DHAVE_SCSI_SG_H=1  -DHAVE_SYS_IOCTL_H=1 -DHAVE_LINUX_HDREG_H  -DHAVE_LINUX_LIMITS_H=1 -DHAVE_LINUX_TYPES_H=1 -DHAVE_LSEEK64=1 -DHAVE_SETMNTENT=1  -I$(srcdir)/f2fs/
-partclone_f2fs_LDADD=torrent_helper.o -luuid $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_f2fs_LDADD=torrent_helper.o $(SHA1_DEPS) -luuid $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
 endif
 
 if ENABLE_NILFS2
 sbin_PROGRAMS += partclone.nilfs2
 partclone_nilfs2_SOURCES=$(main_files) nilfsclone.c nilfsclone.h
 partclone_nilfs2_CFLAGS=-DNILFS
-partclone_nilfs2_LDADD=torrent_helper.o -lnilfs $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_nilfs2_LDADD=torrent_helper.o $(SHA1_DEPS) -lnilfs $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
 endif
 
 if ENABLE_FAT
 sbin_PROGRAMS += partclone.fat
 partclone_fat_SOURCES=$(main_files) fatclone.c fatclone.h
 partclone_fat_CFLAGS=-DFAT
-partclone_fat_LDADD=torrent_helper.o $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_fat_LDADD=torrent_helper.o $(SHA1_DEPS) $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
 endif
 
 sbin_PROGRAMS += partclone.ntfsfixboot
@@ -146,10 +162,10 @@ sbin_PROGRAMS += partclone.ntfs
 partclone_ntfs_SOURCES=$(main_files) ntfsclone-ng.c ntfsclone-ng.h
 if ENABLE_NTFS_3G
 partclone_ntfs_CFLAGS=-DNTFS3G
-partclone_ntfs_LDADD=torrent_helper.o -lntfs-3g $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_ntfs_LDADD=torrent_helper.o $(SHA1_DEPS) -lntfs-3g $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
 else
 partclone_ntfs_CFLAGS=-DNTFS
-partclone_ntfs_LDADD=torrent_helper.o -lntfs $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_ntfs_LDADD=torrent_helper.o $(SHA1_DEPS) -lntfs $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
 endif
 endif
 
@@ -157,24 +173,24 @@ if ENABLE_UFS
 sbin_PROGRAMS += partclone.ufs
 partclone_ufs_SOURCES=$(main_files) ufsclone.c ufsclone.h
 partclone_ufs_CFLAGS=-DUFS -D_GNU_SOURCE
-partclone_ufs_LDADD=torrent_helper.o -lufs -lbsd $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_ufs_LDADD=torrent_helper.o $(SHA1_DEPS) -lufs -lbsd $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
 endif
 
 if ENABLE_VMFS
 sbin_PROGRAMS += partclone.vmfs
 partclone_vmfs_SOURCES=$(main_files) vmfsclone.c vmfsclone.h
 partclone_vmfs_CFLAGS=-DVMFS -D_GNU_SOURCE $(UUID_CFLAGS)
-partclone_vmfs_LDADD=torrent_helper.o -lvmfs -luuid $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_vmfs_LDADD=torrent_helper.o $(SHA1_DEPS) -lvmfs -luuid $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
 
 sbin_PROGRAMS += partclone.vmfs5
 partclone_vmfs5_SOURCES=$(main_files) vmfs5clone.c vmfsclone.h
 partclone_vmfs5_CFLAGS=-DVMFS -D_GNU_SOURCE $(UUID_CFLAGS)
-partclone_vmfs5_LDADD=torrent_helper.o -lvmfs -luuid $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_vmfs5_LDADD=torrent_helper.o $(SHA1_DEPS) -lvmfs -luuid $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
 
 sbin_PROGRAMS += partclone.fstype
 partclone_fstype_SOURCES=fstype.c
 partclone_fstype_CFLAGS=-DVMFS -D_GNU_SOURCE $(UUID_CFLAGS)
-partclone_fstype_LDADD=torrent_helper.o -lvmfs -luuid $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_fstype_LDADD=torrent_helper.o $(SHA1_DEPS) -lvmfs -luuid $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
 
 endif
 
@@ -183,7 +199,7 @@ sbin_PROGRAMS += partclone.jfs
 #partclone_jfs_SOURCES=$(main_files) jfs_devices.c jfs_devices.h jfsclone.c jfsclone.h
 partclone_jfs_SOURCES=$(main_files) jfsclone.c jfsclone.h
 partclone_jfs_CFLAGS=-DJFS
-partclone_jfs_LDADD=torrent_helper.o -ljfs -luuid $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_jfs_LDADD=torrent_helper.o $(SHA1_DEPS) -ljfs -luuid $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
 endif
 
 if ENABLE_BTRFS
@@ -200,21 +216,21 @@ partclone_btrfs_CFLAGS=-std=gnu11 -DBTRFS -DBTRFS_FLAT_INCLUDES -D_XOPEN_SOURCE=
 if ENABLE_STATIC
 partclone_btrfs_CFLAGS += -Dparse_range=btrfs_parse_range
 endif
-partclone_btrfs_LDADD=libpartclone_btrfs.la torrent_helper.o -luuid -lblkid $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static} 
+partclone_btrfs_LDADD=libpartclone_btrfs.la torrent_helper.o $(SHA1_DEPS) -luuid -lblkid $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static} 
 endif
 
 if ENABLE_MINIX
 sbin_PROGRAMS += partclone.minix
 partclone_minix_SOURCES=$(main_files) minixclone.c minixclone.h
 partclone_minix_CFLAGS=-DMINIX
-partclone_minix_LDADD=torrent_helper.o $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
+partclone_minix_LDADD=torrent_helper.o $(SHA1_DEPS) $(PCL_XXHASH_LIBS) $(CRYPTO_DEPS) ${LDADD_static}
 endif
 
 if ENABLE_FUSE
 sbin_PROGRAMS+=partclone.imgfuse
 partclone_imgfuse_SOURCES=fuseimg.c partclone.c checksum.c partclone.h fs_common.h checksum.h
 partclone_imgfuse_CFLAGS=$(FUSE_CFLAGS)
-partclone_imgfuse_LDADD=$(FUSE_LIBS) torrent_helper.o $(CRYPTO_DEPS) ${LDADD_static} $(PCL_XXHASH_LIBS)
+partclone_imgfuse_LDADD=$(FUSE_LIBS) torrent_helper.o $(SHA1_DEPS) $(CRYPTO_DEPS) ${LDADD_static} $(PCL_XXHASH_LIBS)
 if ENABLE_STATIC
 partclone_imgfuse_LDADD+=-ldl
 endif

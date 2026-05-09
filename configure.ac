@@ -499,8 +499,16 @@ AC_CHECK_LIB([ncursesw], [initscr], ,
     AC_MSG_ERROR([*** Ncursesw library (libncursesw5) not found]))
 fi
 
-##libcrypto##
-PKG_CHECK_MODULES([OPENSSL], [openssl],, [AC_MSG_ERROR([openssl not found])])
+## libcrypto ##
+PKG_CHECK_MODULES([OPENSSL], [openssl], [
+    AC_DEFINE([HAVE_OPENSSL], [1], [Define if OpenSSL is available])
+    AC_DEFINE([HAVE_LIBCRYPTO], [1], [Define if libcrypto is available])
+    HAVE_OPENSSL=1
+], [
+    AC_MSG_WARN([OpenSSL not found, using local SHA1 implementation for torrent info])
+    HAVE_OPENSSL=0
+])
+AM_CONDITIONAL(HAVE_OPENSSL, test "$HAVE_OPENSSL" = 1)
 PKG_CHECK_MODULES([ZLIB], [zlib],, [AC_MSG_ERROR([zlib not found])])
 PKG_CHECK_MODULES([ZSTD], [libzstd],, [AC_MSG_ERROR([libzstd not found])])
 
